@@ -1,0 +1,19 @@
+[project]
+name = "mortier-api"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "epsilon"}
+]
+readme = "README.md"
+requires-python = "^3.11"
+dependencies = [
+    "fastapi[standard] (>=0.128.0,<0.129.0)",
+    "pydantic (>=2.12.5,<3.0.0)",
+    "mortier @ file:///home/epsilon/dev/mortier_api/mortier"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
