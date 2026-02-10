@@ -1,5 +1,5 @@
-from fastapi import FastAPI, Response
-from pydantic import BaseModel, Field
+from fastapi import FastAPI, Response,  HTTPException
+from pydantic import BaseModel, Field, PositiveInt, PositiveFloat
 from typing import Annotated, Tuple, Literal
 from mortier.tesselation import RegularTesselation, HyperbolicTesselation, PenroseTesselation
 from mortier.writer import SVGWriter 
@@ -17,26 +17,26 @@ class Params(BaseModel):
     tess_type: Literal["regular", "hyperbolic", "penrose"]
     tess_id: Literal["random", "t3001", "t3003"]
     size: Annotated[
-        Tuple[int, int],
+        Tuple[PositiveInt, PositiveInt],
         Field(
             description="Width and height as two integers",
             min_length=2,
             max_length=2
         )
     ]
-    scale: int
+    scale: PositiveInt 
     angle: float
-    n_sides: int
-    n_neigh: int
-    depth: int
-    refinements: int
+    n_sides: PositiveInt 
+    n_neigh: PositiveInt 
+    depth: PositiveInt 
+    refinements: int 
     half_plane: bool
     parametrisation: Literal["none", "simplex", "perlin"]
     ornement: Literal["none", "bands", "laces"]
-    bands_width: float 
+    bands_width: PositiveFloat 
     hatching: Literal["none", "line", "dot"]
     cross_hatch: bool
-    hatch_spacing: int
+    hatch_spacing: PositiveFloat 
 
 
 origins = [
@@ -53,7 +53,7 @@ app.add_middleware(
 
 @app.post("/tiling")
 def tiling(params: Params):
-    writer = SVGWriter("out", size = (0, 0, 300, 200))
+    writer = SVGWriter("out", size = (0, 0, 370, 220))
     writer.api_mode = True
     if params.tess_id == "random":
         tess_id = random.choice(list(js.keys()))
@@ -64,6 +64,8 @@ def tiling(params: Params):
     if params.tess_type == "regular":
         tesselation = RegularTesselation(writer, tess, tess_id)
     elif params.tess_type == "hyperbolic":
+        if (params.n_sides - 2) * (params.n_neigh - 2) < 4:
+            raise HTTPException(status_code=400, detail="Invalid parameters for hyperbolic tesselation. (n_neigh - 2) * (n_sides - 2) < 4.")
         tesselation = HyperbolicTesselation(writer, params.n_sides, params.n_neigh, params.depth)
         tesselation.half_plane = params.half_plane
         print(params.half_plane)
