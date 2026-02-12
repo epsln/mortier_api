@@ -1,8 +1,9 @@
 from fastapi import FastAPI, Response,  HTTPException
-from pydantic import BaseModel, Field, PositiveInt, PositiveFloat
+from pydantic import BaseModel, Field, PositiveInt, PositiveFloat, NonNegativeInt 
 from typing import Annotated, Tuple, Literal
 from mortier.tesselation import RegularTesselation, HyperbolicTesselation, PenroseTesselation
 from mortier.writer import SVGWriter 
+from mortier.enums import TileType, ParamType, HatchType 
 from fastapi.middleware.cors import CORSMiddleware
 import json
 import random
@@ -31,13 +32,14 @@ class Params(BaseModel):
     depth: PositiveInt 
     refinements: int 
     half_plane: bool
-    parametrisation: Literal["none", "simplex", "perlin"]
+    parametrisation: Literal["none", "SIMPLEX", "PERLIN"]
     ornement: Literal["none", "bands", "laces"]
     bands_width: PositiveFloat 
-    hatching: Literal["none", "line", "dot"]
+    hatching: Literal["none", "LINE", "DOT"]
     cross_hatch: bool
-    hatch_spacing: PositiveFloat 
-
+    hatch_spacing: PositiveFloat
+    tile:  Literal["P2", "P3"]
+    color_line: Tuple[NonNegativeInt, NonNegativeInt, NonNegativeInt]
 
 origins = [
         "*"
@@ -68,16 +70,16 @@ def tiling(params: Params):
             raise HTTPException(status_code=400, detail="Invalid parameters for hyperbolic tesselation. (n_neigh - 2) * (n_sides - 2) < 4.")
         tesselation = HyperbolicTesselation(writer, params.n_sides, params.n_neigh, params.depth)
         tesselation.half_plane = params.half_plane
-        print(params.half_plane)
         tesselation.refine_tiling(params.refinements)
     else:
-        tesselation = PenroseTesselation(writer)
+        tesselation = PenroseTesselation(writer, tile = TileType[params.tile])
     tesselation.set_angle(params.angle)
     if params.ornement == "bands":
         writer.bands_mode = True 
     if params.ornement == "laces":
         writer.lacing_mode = True 
     writer.bands_width = params.bands_width
+    writer.color_line = params.color_line
     #writer.bezier_curve = bezier 
     writer.hatch_fill_parameters["angle"] = 0  
     writer.hatch_fill_parameters["spacing"] = params.hatch_spacing
@@ -85,7 +87,9 @@ def tiling(params: Params):
     if params.hatching == "none":
         writer.hatch_fill_parameters["type"] = None
     else:
-        writer.hatch_fill_parameters["type"] = params.hatching 
+        writer.hatch_fill_parameters["type"] = HatchType[params.hatching]
+        tesselation.set_param_mode(ParamType[params.parametrisation])
+    tesselation.writer = writer
     svg = tesselation.draw_tesselation()
 
     return Response(svg, media_type="image/svg+xml")
