@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Response,  HTTPException
 from pydantic import BaseModel, Field, PositiveInt, PositiveFloat, NonNegativeInt 
-from typing import Annotated, Tuple, Literal
+from typing import Annotated, Tuple, Literal, Optional
 from mortier.tesselation import RegularTesselation, HyperbolicTesselation, PenroseTesselation
 from mortier.writer import SVGWriter 
 from mortier.enums import TileType, ParamType, HatchType 
@@ -27,20 +27,32 @@ class Params(BaseModel):
     ]
     scale: PositiveInt 
     angle: float
-    n_sides: PositiveInt 
-    n_neigh: PositiveInt 
-    depth: PositiveInt 
-    refinements: int 
-    half_plane: bool
-    parametrisation: Literal["none", "SIMPLEX", "PERLIN"]
+    parametrisation: Optional[ParamType] = None
     ornement: Literal["none", "bands", "laces"]
     bands_width: PositiveFloat 
     hatching: Literal["none", "LINE", "DOT"]
     cross_hatch: bool
     hatch_spacing: PositiveFloat
-    tile:  Literal["P2", "P3"]
     color_line: Tuple[NonNegativeInt, NonNegativeInt, NonNegativeInt]
 
+class RegularTessParameters(BaseModel):
+    tess_id: Literal["random", "t3001", "t3003"]
+
+class HyperbolicTessParameters(BaseModel):
+    n_sides: PositiveInt 
+    n_neigh: PositiveInt 
+    depth: PositiveInt 
+    refinements: int 
+    half_plane: bool
+
+class PenroseTessParameters(BaseModel):
+    tile:  Literal[TileType.P2, TileType.P3]
+
+class OrnementParameters(BaseModel):
+    hatching: Literal[ParamType.SIMPLEX, ParamType.PERLIN]
+    hatch_spacing: PositiveFloat
+    cross_hatch: bool 
+    
 origins = [
         "*"
 ]
@@ -88,7 +100,7 @@ def tiling(params: Params):
         writer.hatch_fill_parameters["type"] = None
     else:
         writer.hatch_fill_parameters["type"] = HatchType[params.hatching]
-        tesselation.set_param_mode(ParamType[params.parametrisation])
+    tesselation.set_param_mode(params.parametrisation)
     tesselation.writer = writer
     svg = tesselation.draw_tesselation()
 
