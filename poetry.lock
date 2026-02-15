@@ -1291,7 +1291,7 @@ files = [
 
 [[package]]
 name = "mortier"
-version = "0.3.2-dev"
+version = "0.3.4-dev"
 description = ""
 optional = false
 python-versions = ">=3.11"
