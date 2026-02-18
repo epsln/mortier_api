@@ -13,6 +13,7 @@ from mortier.writer.ornements import Ornements
 from mortier.writer.hatching import Hatching
 from fastapi.middleware.cors import CORSMiddleware
 
+import time 
 import json
 import random
 
@@ -118,6 +119,8 @@ def tiling(params: Params):
     if params.angle_parametrisation:
         tesselation.set_param_mode(params.angle_parametrisation)
     tesselation.writer = writer
+    t = time.time()
     svg = tesselation.draw_tesselation()
+    print(time.time() - t)
     
     return Response(svg)
