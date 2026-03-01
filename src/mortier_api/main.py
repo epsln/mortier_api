@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Response,  HTTPException
 from fastapi.middleware.gzip import GZipMiddleware
 
-from pydantic import BaseModel, Field, PositiveInt, PositiveFloat, NonNegativeInt, NonNegativeFloat
+from pydantic import BaseModel, Field, PositiveInt, PositiveFloat, NonNegativeInt, NonNegativeFloat, field_validator
 from typing import Annotated, Tuple, Literal, Optional, Union
 
 from mortier.tesselation import RegularTesselation, HyperbolicTesselation, PenroseTesselation
@@ -13,6 +13,8 @@ from mortier.writer.ornements import Ornements
 from mortier.writer.hatching import Hatching
 from fastapi.middleware.cors import CORSMiddleware
 
+from matplotlib import colormaps
+
 import time 
 import json
 import random
@@ -23,6 +25,7 @@ with open('data/database.json', 'r') as file:
 
 TESS_IDS = list(js.keys())
 TESS_IDS.append("random")
+VALID_COLORMAPS = set(colormaps())
 
 class RegularTessParameters(BaseModel):
     type: Literal["regular"]
@@ -72,6 +75,13 @@ class Params(BaseModel):
     ornements: Optional[Ornements] = None
     hatching: Optional[Hatching] = None
     color_line: Tuple[NonNegativeInt, NonNegativeInt, NonNegativeInt] = [255, 255, 255]
+    colormap: Optional[str] = None
+    @field_validator("colormap")
+    @classmethod
+    def validate_colormap(cls, v):
+        if v is not None and v not in VALID_COLORMAPS:
+            raise ValueError(f"Invalid colormap '{v}'. Must be one of the matplotlib colormaps.")
+        return v
 
    
 origins = [
@@ -110,17 +120,18 @@ def tiling(params: Params):
         tesselation.half_plane = params.tess_parameters.half_plane
         tesselation.refine_tiling(params.tess_parameters.refinements)
     else:
+        writer.n_tiles = params.scale * 5
         tesselation = PenroseTesselation(writer, tile = TileType[params.tess_parameters.tile], level = params.tess_parameters.depth)
 
     writer.ornements = params.ornements
     writer.hatching = params.hatching
     writer.color_line = params.color_line
+    if params.colormap:
+        writer.set_colormap(colormaps[params.colormap])
     tesselation.set_angle(params.angle)
     if params.angle_parametrisation:
         tesselation.set_param_mode(params.angle_parametrisation)
     tesselation.writer = writer
-    t = time.time()
     svg = tesselation.draw_tesselation()
-    print(time.time() - t)
     
     return Response(svg)
