@@ -264,7 +264,7 @@ async def create_print_session(body: PrintRequest):
             "price_data": {
                 "currency":     "eur",
                 "unit_amount":  product["price_cents"],
-                "product_data": {"name": product["name"]
+                "product_data": {"name": product["name"],
                                  "images": f"https://mortier_api.onrender.com/files/{file_id}"},
 
             },
