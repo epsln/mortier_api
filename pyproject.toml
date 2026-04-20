@@ -10,7 +10,10 @@ requires-python = "^3.11"
 dependencies = [
     "fastapi[standard] (>=0.128.0,<0.129.0)",
     "pydantic (>=2.12.5,<3.0.0)",
-		"mortier @ file:///opt/render/project/src/mortier",
+		"mortier @ file:///home/epsilon/dev/mortier_api/mortier",
+		"httpx (>=0.28.1,<0.29.0)",
+		"stripe (>=15.0.1,<16.0.0)",
+		"cairosvg (>=2.9.0,<3.0.0)",
 ]
 
 
