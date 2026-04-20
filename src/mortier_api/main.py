@@ -316,10 +316,10 @@ async def stripe_webhook(request: Request):
     if event["type"] == "checkout.session.completed":
         s        = event["data"]["object"]
         meta     = s["metadata"]
-        shipping = s.get("shippingAddress") or {}
-        firstName     = shipping.get("firstName", "")
-        lastName     = shipping.get("lastName", "")
-
+        shipping = s['collected_information'].get("shipping_details") or {}
+        name = shipping.get("name", "")
+        address = shipping.get("adress") or {}
+        
         async with httpx.AsyncClient(timeout=30.0) as client:
             # ⚠️  Verify this endpoint against the current Gelato API docs.
             # === Set-up order request ===
@@ -327,8 +327,8 @@ async def stripe_webhook(request: Request):
             orderJson = {
                 "orderType": "order",
                 "orderReferenceId": s["id"],
-                "customerReferenceId": s.get("customer_email", ""),
-                "currency": "EUR",#TODO: Check for currency...
+                "customerReferenceId": s['customer_details'].get("customer_email", ""),
+                "currency": s['currency'].upper(),
                 "items": [
                     {
                         "itemReferenceId": f"tiling-custom{s['id']}",
@@ -347,14 +347,14 @@ async def stripe_webhook(request: Request):
                     "companyName": "",
                     "firstName":    firstName,
                     "lastName":     lastName,
-                    "addressLine1": shipping.get("addressLine1", ""),
-                    "addressLine2": shipping.get("addressLine2") or "",
-                    "state": shipping.get("state") or "",
-                    "city":         shipping.get("city", ""),
-                    "postCode":     shipping.get("postCode", ""),
-                    "country":      shipping.get("country", ""),
-                    "email":      shipping.get("email", ""),
-                    "phone":      shipping.get("phone", ""),
+                    "addressLine1": address.get("line1", ""),
+                    "addressLine2": address.get("line2") or "",
+                    "state": address.get("state") or "",
+                    "city":         address.get("city", ""),
+                    "postCode":     adress.get("postCode", ""),
+                    "country":      adress.get("country", ""),
+                    "email":      s['customer_details'].get("email", ""),
+                    "phone":      s['customer_details'].get("phone", ""),
                     }
             }
             # === Send order request ===
