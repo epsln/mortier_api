@@ -265,7 +265,7 @@ async def create_print_session(body: PrintRequest):
                 "currency":     "eur",
                 "unit_amount":  product["price_cents"],
                 "product_data": {"name": product["name"],
-                                 "images": f"https://mortier_api.onrender.com/files/{file_id}"},
+                                 "images": [f"https://mortier_api.onrender.com/files/{file_id}"]},
 
             },
             "quantity": 1,
@@ -290,7 +290,7 @@ async def create_print_session(body: PrintRequest):
             "gelato_file_id":    file_id,
             "gelato_product_uid": product["gelato_uid"],
         },
-        #success_url=SUCCESS_URL,
+        success_url=SUCCESS_URL,
         cancel_url=CANCEL_URL,
     )
     return {"checkout_url": session.url}
